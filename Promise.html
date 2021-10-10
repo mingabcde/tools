@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        function myPromise(callback) {
+            this.state = 'pending';
+            this.successArray = [];
+            this.failArray = [];
+            // 操作成功时 调用的函数
+            let resolve = value => {
+                // 修改状态
+                this.state = 'resolved';
+                // 执行回调函数
+                this.successArray.forEach(fn => value = fn(value));
+                // 清空队列
+                this.successArray = [];
+                // 保存参数
+                this.value = value;
+            }
+            // 操作失败时 调用的函数
+            let reject = value => {
+                // 修改状态
+                this.state = 'rejected';
+                // 执行回调函数
+                this.failArray.forEach(fn => value = fn(value));
+                //清空队列
+                this.failArray = [];
+                // 保存参数
+                this.value = value;
+            }
+            try{
+                callback(resolve, reject);
+            }catch(e) {
+                reject(e);
+            }
+        }  
+        // 定义原型函数then
+        Object.assign(myPromise.prototype, {
+            then: function(success, fail) {
+                // 根据状态执行
+                if (this.state === 'pending') {
+                    success && this.successArray.push(success);
+                    fail && this.failArray.push(fail);
+                }else if (this.state === 'resolved') {
+                    // 立即执行
+                    success && success(this.value);
+                }else {
+                    //立即执行
+                    fail && fail(this.value);
+                }
+                return this;
+            }
+        })
+
+
+        let mP = new myPromise((resolve, reject) => {
+            setTimeout(() => {
+                // console.log('操作成功');
+                resolve('操作成功');
+                // reject('操作失败')
+            })
+        })
+        mP.then(
+            item =>{
+                console.log('success', item);
+                return 200;
+            },
+            err => {
+                console.log('fail', err);
+                return 100;
+            }
+        )
+        .then(
+            item => console.log('第二次执行了', item)
+        )
+    </script>
+</body>
+</html>
